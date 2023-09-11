@@ -1,143 +1,214 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 
-void main() async {
+void main() {
   runApp(
-    MaterialApp(debugShowCheckedModeBanner: false, initialRoute: '/', routes: {
-      '/': (context) => RouteOne(),
-      '/detail': (context) => RouteTwo(image: '', name: ''),
-    }),
+    MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: CalendarApp(),
+    ),
   );
 }
 
-class PhotoItem {
-  final String image;
-  final String name;
-  PhotoItem(this.image, this.name);
+class CalendarApp extends StatefulWidget {
+  @override
+  _CalendarAppState createState() => _CalendarAppState();
 }
 
-class RouteOne extends StatelessWidget {
-  final List<PhotoItem> _items = [
-    PhotoItem(
-        "https://images.pexels.com/photos/1772973/pexels-photo-1772973.png?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260",
-        "Stephan Seeber"),
-    PhotoItem(
-        "https://images.pexels.com/photos/1758531/pexels-photo-1758531.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260",
-        "Liam Gant"),
-    PhotoItem(
-        "https://images.pexels.com/photos/1130847/pexels-photo-1130847.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260",
-        "Stephan Seeber"),
-    PhotoItem(
-        "https://images.pexels.com/photos/45900/landscape-scotland-isle-of-skye-old-man-of-storr-45900.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260",
-        "Pixabay"),
-    PhotoItem(
-        "https://images.pexels.com/photos/165779/pexels-photo-165779.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260",
-        "Scott Webb"),
-    PhotoItem(
-        "https://images.pexels.com/photos/548264/pexels-photo-548264.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260",
-        "Krivec Ales"),
-    PhotoItem(
-        "https://images.pexels.com/photos/188973/matterhorn-alpine-zermatt-mountains-188973.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260",
-        "Pixabay"),
-    PhotoItem(
-        "https://images.pexels.com/photos/795188/pexels-photo-795188.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260",
-        "Melanie Wupper"),
-    PhotoItem(
-        "https://images.pexels.com/photos/5222/snow-mountains-forest-winter.jpg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260",
-        "Jaymantri"),
-    PhotoItem(
-        "https://images.pexels.com/photos/789381/pexels-photo-789381.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260",
-        "Riciardus"),
-    PhotoItem(
-        "https://images.pexels.com/photos/326119/pexels-photo-326119.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260",
-        "Pixabay"),
-    PhotoItem(
-        "https://images.pexels.com/photos/707344/pexels-photo-707344.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260",
-        "Eberhard"),
-    PhotoItem(
-        "https://images.pexels.com/photos/691034/pexels-photo-691034.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260",
-        "Mirsad Mujanovic"),
-    PhotoItem(
-        "https://images.pexels.com/photos/655676/pexels-photo-655676.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260",
-        "Vittorio Staffolani"),
-    PhotoItem(
-        "https://images.pexels.com/photos/592941/pexels-photo-592941.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260",
-        "Tobi"),
-  ];
+class _CalendarAppState extends State<CalendarApp> {
+  List<PhotoItem> _items = [];
+  late String currentMonthName; // Store the current month name
+
+  @override
+  void initState() {
+    super.initState();
+    _generateCalendarItems();
+    _setCurrentMonthName();
+  }
+
+  void _generateCalendarItems() {
+    final now = DateTime.now();
+    final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+
+    for (int day = 1; day <= daysInMonth; day++) {
+      final date = DateTime(now.year, now.month, day);
+      final weekday = DateFormat('EEEE').format(date);
+      _items.add(PhotoItem(day, weekday, null));
+    }
+  }
+
+  void _setCurrentMonthName() {
+    final now = DateTime.now();
+    currentMonthName = DateFormat('MMMM').format(now);
+  }
+
+  Future<void> _selectImage(PhotoItem item) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.getImage(
+      source: ImageSource.gallery,
+    );
+
+    if (pickedFile != null) {
+      setState(() {
+        item.image = File(pickedFile.path);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('Screen one ☝️'),
-      ),
-      body: GridView.builder(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisSpacing: 0,
-          mainAxisSpacing: 0,
-          crossAxisCount: 3,
-        ),
-        itemCount: _items.length,
-        itemBuilder: (context, index) {
-          return new GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => RouteTwo(
-                      image: _items[index].image, name: _items[index].name),
+        title: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children:[ Text(
+          'daily.app', // Display the current month name
+          style: montserratTextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ), Text(
+    currentMonthName, // Display the current month name
+    style: montserratTextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.bold,
+    color: Colors.black,
+    ),
+    ),])),
+      body: Padding(
+        padding: EdgeInsets.all(10),
+        child: GridView.builder(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+            crossAxisCount: 3,
+          ),
+          itemCount: _items.length,
+          itemBuilder: (context, index) {
+            return GestureDetector(
+              onTap: () {
+                if (_items[index].image != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => RouteTwo(
+                        image: _items[index].image,
+                        date: _items[index].day.toString(),
+                        weekday: _items[index].weekday,
+                      ),
+                    ),
+                  );
+                } else {
+                  _selectImage(_items[index]);
+                }
+              },
+              child: Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
-              );
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  fit: BoxFit.cover,
-                  image: NetworkImage(_items[index].image),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    image: _items[index].image != null
+                        ? DecorationImage(
+                      fit: BoxFit.cover,
+                      image: FileImage(_items[index].image!),
+                    )
+                        : null,
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _items[index].day.toString(),
+                          style: montserratTextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        Text(
+                          _items[index].weekday,
+                          style: montserratTextStyle(
+                            fontSize: 16,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
+
+
+}
+
+class PhotoItem {
+  final int day;
+  final String weekday;
+  File? image;
+
+  PhotoItem(this.day, this.weekday, this.image);
 }
 
 class RouteTwo extends StatelessWidget {
-  final String image;
-  final String name;
+  final File? image;
+  final String date;
+  final String weekday;
 
-  RouteTwo({Key? key, required this.image, required this.name})
+  RouteTwo({Key? key, required this.image, required this.date, required this.weekday})
       : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Screen two ✌️'),
+        title: Text('the one where'),
       ),
-      body: Column(
-        children: [
-          AspectRatio(
-            aspectRatio: 1,
-            child: Container(
-              width: double.infinity,
-              child: Image(
-                image: NetworkImage(image),
-              ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            image != null
+                ? Image.file(image!, width: 150, height: 150, fit: BoxFit.cover)
+                : Placeholder(),
+            SizedBox(height: 20),
+            Text(
+              'Date: $date',
+              style: montserratTextStyle(fontSize: 16),
             ),
-          ),
-          Container(
-            margin: const EdgeInsets.all(20.0),
-            child: Center(
-              child: Text(
-                name,
-                style: TextStyle(fontSize: 40),
-              ),
+            Text(
+              'Weekday: $weekday',
+              style: montserratTextStyle(fontSize: 16),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+}
+
+TextStyle montserratTextStyle({
+  double fontSize = 14.0,
+  FontWeight fontWeight = FontWeight.normal,
+  Color color = Colors.black,
+}) {
+  return TextStyle(
+    fontFamily: 'Montserrat',
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    color: color,
+  );
 }
